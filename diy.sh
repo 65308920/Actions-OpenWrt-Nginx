@@ -4,7 +4,7 @@ rm -Rf feeds/custom/luci/*
 cd feeds/custom/luci
 svn co https://github.com/fw876/helloworld/trunk/luci-app-ssr-plus
 git clone https://github.com/rufengsuixing/luci-app-adguardhome
-git clone https://github.com/doushang/luci-theme-argon -b master
+git clone https://github.com/doushang/luci-theme-argon -b 19.07_stable 
 svn co https://github.com/apollo-ng/luci-theme-darkmatter/branches/openwrt-19/luci/themes/luci-theme-darkmatter
 git clone https://github.com/pymumu/luci-app-smartdns -b lede
 git clone https://github.com/lisaac/luci-app-diskman
