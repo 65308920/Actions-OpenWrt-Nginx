@@ -80,21 +80,13 @@ jobs:
     - name: Update feeds
       run: cd openwrt && ./scripts/feeds update -a
 
-    - name: Install feeds
-      run: cd openwrt && ./scripts/feeds install -a
-
     - name: Load custom configuration
       run: |
-        [ -e files ] && mv files openwrt/files
-        chmod +x $DIY_SH
+        cp -Rf * openwrt/ || true
         cd openwrt
-        ../$DIY_SH
-        if [ -n "$(ls -A "../patches" 2>/dev/null)" ]; then
-        (
-          find "../patches" -type f -name '*.patch'| xargs -i git apply {}
-        )
-        fi
-        [ -e ../$CONFIG_FILE ] && mv ../$CONFIG_FILE .config
+        chmod +x $DIY_SH
+        ./$DIY_SH
+        [ -e $CONFIG_FILE ] && mv $CONFIG_FILE .config
         make defconfig
         [ $(grep '^CONFIG_TARGET.*DEVICE.*=y' .config | sed -r 's/.*DEVICE_(.*)=y/\1/') == generic ] && DEVICE_NAME=$(grep '^CONFIG_TARGET.*DEVICE.*=y' .config | sed -r 's/CONFIG_TARGET_(.*)_DEVICE_.*=y/\1/') || DEVICE_NAME=$(grep '^CONFIG_TARGET.*DEVICE.*=y' .config | sed -r 's/.*DEVICE_(.*)=y/\1/')
         echo "::set-env name=DEVICE_NAME::$DEVICE_NAME"
@@ -128,9 +120,8 @@ jobs:
     - name: WeChat notification
       if: env.SCKEY && !cancelled()
       run: |
-        [ ${{ env.status }} == 'success' ] && curl https://sc.ftqq.com/${{ secrets.SCKEY }}.send?text=OpenWrt-${{ env.date3 }}-${{ env.DEVICE_NAME }}编译完成 || curl https://sc.ftqq.com/${{ secrets.SCKEY }}.send?text=OpenWrt-${{ env.date3 }}-${{ env.DEVICE_NAME }}编译失败
+        [ ${{ env.status }} == 'success' ] && curl https://sc.ftqq.com/${{ secrets.SCKEY }}.send?text=OpenWrt_${{ env.date3 }}_${{ env.DEVICE_NAME }}编译完成 || curl https://sc.ftqq.com/${{ secrets.SCKEY }}.send?text=OpenWrt_${{ env.date3 }}_${{ env.DEVICE_NAME }}编译失败
       
-
     - name: Upload bin directory
       uses: actions/upload-artifact@master
       if: env.UPLOAD_BIN_DIR == 'true'
@@ -207,5 +198,6 @@ jobs:
     - name: Upload firmware to cowtransfer
       if: env.UPLOAD_COWTRANSFER == 'true'
       run: |
-        curl -fsSL https://git.io/cowtransfer | sh
-        ./cowtransfer-uploader -b 2621440 -s -p 99 -t 3 --hash --silent ${{ env.FIRMWARE }}
+        curl -fsSL git.io/file-transfer | sh
+        ./transfer cow --block 2621440 -s -p 64 --no-progress ${FIRMWARE} 2>&1 | tee cowtransfer.log
+        echo "::warning file=cowtransfer.com::$(cat cowtransfer.log | grep https)"
