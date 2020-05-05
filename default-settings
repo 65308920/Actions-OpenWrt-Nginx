@@ -1,8 +1,8 @@
 #!/bin/sh
 
-
 ln -sf /sbin/ip /usr/bin/ip
-sed -i 's/downloads.openwrt.org/openwrt.proxy.ustclug.org/g' /etc/opkg/distfeeds.conf
+sed -i 's/downloads.openwrt.org\/snapshots/openwrt.proxy.ustclug.org\/releases\/19.07-SNAPSHOT/g' /etc/opkg/distfeeds.conf
+sed -i '/openwrt_custom/d' /etc/opkg/distfeeds.conf
 sed -i 's/http/https/g' /etc/opkg/distfeeds.conf
 sed -i "s/# //g" /etc/opkg/distfeeds.conf
 
@@ -26,8 +26,6 @@ if [ ! -f /etc/config/placeholder ]; then
   uci commit fstab
   sed -i 's/root:.*/root:$1$tTPCBw1t$ldzfp37h5lSpO9VXk4uUE\/:18336:0:99999:7:::/g' /etc/shadow
   uci set network.lan.ipaddr="10.0.0.1"
-  uci set network.lan.ifname="eth1"
-  uci set network.wan.ifname="eth0"
   uci set network.wan.proto=pppoe
   uci commit network
   
@@ -35,6 +33,15 @@ if [ ! -f /etc/config/placeholder ]; then
   echo net.ipv6.conf.all.disable_ipv6=1 >> /etc/sysctl.conf
   echo net.ipv6.conf.default.disable_ipv6=1 >> /etc/sysctl.conf
   echo net.ipv6.conf.lo.disable_ipv6 = 1 >> /etc/sysctl.conf
+  
+  uci del dockerman.local.daemon_ea
+  uci commit dockerman
+  
+  uci set firewall.@defaults[0].fullcone='1'
+  uci commit firewall
+  
+  uci set flowoffload.@flow[0].bbr='1'
+  uci commit flowoffload
   
   uci set shadowsocksr.@global[0].pdnsd_enable='0'
   uci del shadowsocksr.@global[0].tunnel_forward
@@ -61,6 +68,14 @@ if [ ! -f /etc/config/placeholder ]; then
   uci set AdGuardHome.AdGuardHome.redirect='dnsmasq-upstream'
   uci set AdGuardHome.AdGuardHome.enabled='1'
   uci commit AdGuardHome
+  
+  uci set smartdns.@smartdns[0].enabled='1'
+  uci set smartdns.@smartdns[0].port='5555'
+  uci set smartdns.@smartdns[0].redirect='none'
+  uci set smartdns.@smartdns[0].tcp_server='1'
+  uci set smartdns.@smartdns[0].prefetch_domain='1'
+  uci set smartdns.@smartdns[0].serve_expired='1'
+  uci commit smartdns
   
   #uci del dhcp.@dnsmasq[0].resolvfile
   #uci set dhcp.@dnsmasq[0].noresolv='1'
@@ -239,16 +254,6 @@ config server
 
 EOF
 }
-fi
-
-if [ $(uci get AdGuardHome.AdGuardHome.enabled) == '1' ]; then
-  uci set smartdns.@smartdns[0].enabled='1'
-  uci set smartdns.@smartdns[0].port='5555'
-  uci set smartdns.@smartdns[0].redirect='none'
-  uci set smartdns.@smartdns[0].tcp_server='1'
-  uci set smartdns.@smartdns[0].prefetch_domain='1'
-  uci set smartdns.@smartdns[0].serve_expired='1'
-  uci commit smartdns
 fi
 
 if [ -f /etc/config/jia ]; then
